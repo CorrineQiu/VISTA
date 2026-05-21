@@ -1,0 +1,120 @@
+nodes: 1
+tasks_per_node: 1
+cpus_per_task: 32
+
+tag: vista_sta_vjepa21_r50fpn_4head
+eval_name: vista_sta
+save_subdir: vista_sta_trainval_cached
+folder: ${REPO_ROOT}/runs
+results_dir: ${REPO_ROOT}/outputs/test_epoch016_allheads
+resume_checkpoint: false
+load_checkpoint: ${VISTA_CHECKPOINT}
+val_only: true
+prebuild_cache: false
+build_test_cache: false
+cache_root: ${REPO_ROOT}/outputs/cache
+serialize_model_init: true
+use_fsdp: false
+
+experiment:
+  data:
+    dataset: Ego4D_STA
+    train_split_root: ${EGO4D_STA_ROOT}/frames_of_video_sta_2fps/train
+    val_split_root: ${EGO4D_STA_ROOT}/frames_of_video_sta_2fps/val
+    test_split_root: ${EGO4D_STA_ROOT}/frames_of_video_sta_2fps/test_unannotated
+    evaluator_gt_json: ${EGO4D_STA_ROOT}/fho_sta_val.json
+    train_include_val: false
+    val_holdout_count: 0
+    frames_per_clip: 8
+    frames_per_second: 2
+    video_resolution: 384
+    image_short_side_train: [640, 672, 704, 736, 768, 800]
+    image_short_side_val: 800
+    image_max_size: 1333
+    horizontal_flip_prob: 0.0
+    num_workers: 2
+    pin_memory: true
+    persistent_workers: true
+    prefetch_factor: 2
+    use_jepa_feature_cache: true
+    jepa_feature_root: ${REPO_ROOT}/outputs/jepa_global_cache_vjepa8f
+
+  optimization:
+    num_epochs: 16
+    batch_size: 4
+    grad_accum_steps: 1
+    use_bfloat16: true
+    allow_tf32: true
+    cudnn_benchmark: true
+    lr: 0.00010
+    start_lr: 0.000010
+    final_lr: 0.0
+    detector_lr_mult: 0.25
+    warmup: 0.5
+    weight_decay: 0.0001
+    final_weight_decay: 0.0001
+    use_fsdp: false
+
+  evaluation:
+    eval_split: test
+    prediction_topk: 100
+    eval_batch_size: 2
+    validation_log_interval: 50
+    max_val_batches: null
+    compute_proxy_metrics: false
+    compute_val_loss: false
+    run_official: false
+    official_eval_heads: all
+    validation_heads: all
+    dump_predictions: all
+    evaluator_script: ${REPO_ROOT}/evals/vista_sta/run_official_metric_only.py
+
+model_kwargs:
+  checkpoint: ${VJEPA_CHECKPOINT}
+  frames_per_clip: 8
+  video_short_side: 384
+  proposal_topk_train: 2000
+  proposal_topk_test: 300
+  rpn_pre_nms_topk_train: 2000
+  rpn_pre_nms_topk_test: 1000
+  rpn_nms_thresh: 0.7
+  class_topk_per_proposal: 5
+  verb_topk_per_proposal: 3
+  detections_per_img: 100
+  box_score_thresh: 0.001
+  box_nms_thresh: 0.55
+  box_reg_weights: [10.0, 10.0, 5.0, 5.0]
+  inference_score: objectness_quality_noun_verb
+  verb_background: true
+  detector_pretrained: true
+  detector_weights_path: ${DETECTOR_WEIGHTS}
+  detector_trainable_backbone_layers: 3
+  freeze_detector_backbone: false
+  freeze_detector_rpn: false
+  freeze_detector_box_head: false
+  verb_loss_weight: 0.1
+  ttc_loss_weight: 0.5
+  score_loss_weight: 1.0
+  roi_pool_size: 7
+  probe_depth: 2
+  num_heads: 8
+  num_prediction_heads: 4
+  representation_size: 1024
+  fpn_context_fusion: true
+  freeze_video_probe_when_using_cache: true
+  skip_vjepa_encoder_load: true
+  cached_vjepa_dim: 1664
+  backbone_kwargs:
+    use_v2_1: true
+    encoder:
+      model_name: vit_gigantic_xformers
+      checkpoint_key: target_encoder
+      tubelet_size: 2
+      patch_size: 16
+      uniform_power: false
+      use_rope: true
+      use_sdpa: true
+      use_silu: false
+      wide_silu: true
+      img_temporal_dim_size: 1
+      interpolate_rope: true
